@@ -75,7 +75,7 @@ class SimpleNN(Module):
             loss: computed loss.
         """
         x1, x2, out = self.forward(x_train, is_training=True)
-        loss , loss_grad = self._mean_square_loss(out, y_train)
+        loss, loss_grad = self._mean_square_loss(out, y_train)
 
         # Now start to use your backward function to update the parameters.
         # Dont forget transfer the self.lr to the backward function.
@@ -86,10 +86,15 @@ class SimpleNN(Module):
         """
         Please Fill Your Code Here.
         """
-
-        bk_out = self.output.backward(out, loss_grad, self.lr)
-        bk_act = self.activation.backward(x2, bk_out, self.lr)
-        self.linear.backward(x1, bk_act, self.lr)
+        print('x1.shape= ', x1.shape)
+        print('x2.shape= ', x2.shape)
+        print('out.shape= ', out.shape)
+        print('loss_grad.shape= ', loss_grad.shape)
+        bk_out = self.output.backward(x2, loss_grad, self.lr)
+        print('bk_out.shape= ', bk_out.shape)
+        bk_act = self.activation.backward(x1, bk_out, self.lr)
+        print('bk_act.shape= ', bk_out.shape)
+        self.linear.backward(x_train, bk_act, self.lr)
 
         return loss
 
@@ -109,6 +114,7 @@ class Linear(Module):
         # initilize weights
         self.W = np.random.randn(input_dim,output_dim) * 1e-2
         self.b = np.zeros((1,output_dim))
+        print('b.shape= ', self.b.shape)
                        
     def forward(self,inputs):
         """
@@ -177,7 +183,8 @@ class ReLU(Module):
         Please Fill Your Code Here.
         """
         # return *
-        outputs = np.dot(inputs, grad_output)
+        #outputs = np.dot(inputs, grad_output)
+        outputs = np.where(inputs > 0, grad_output, 0)
 
         return outputs
 
