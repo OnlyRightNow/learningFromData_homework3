@@ -9,10 +9,10 @@ Edited on 21/10/9102 to reformulate the code in Pytorch style. [V2]
 
 import numpy as np
 import matplotlib.pyplot as plt
-plt.style.use('ggplot') 
+
+plt.style.use('ggplot')
 import pdb
 import datetime
-
 
 "[ATTENTION] There are total 5 spaces for you to fill."
 
@@ -23,11 +23,13 @@ import datetime
 class Module:
     def __init__(self):
         pass
+
     def forward(self):
         pass
 
     def __call__(self, *inputs, **kwargs):
         return self.forward(*inputs, **kwargs)
+
 
 # ----------
 # Build the main NN structure.
@@ -39,12 +41,13 @@ class SimpleNN(Module):
     But here without Pytorch, we have to achieve the 
     backward() function for it on our own ;)
     """
+
     def __init__(self, learning_rate):
         super(SimpleNN, self).__init__()
         #  initilize the components needed for the NN.
-        self.linear = Linear(1,80)
+        self.linear = Linear(1, 80)
         self.activation = ReLU()
-        self.output = Linear(80,1)
+        self.output = Linear(80, 1)
         # initilize the learning rate
         self.lr = learning_rate
 
@@ -86,39 +89,33 @@ class SimpleNN(Module):
         """
         Please Fill Your Code Here.
         """
-        print('x1.shape= ', x1.shape)
-        print('x2.shape= ', x2.shape)
-        print('out.shape= ', out.shape)
-        print('loss_grad.shape= ', loss_grad.shape)
-        bk_out = self.output.backward(x2, loss_grad, self.lr)
-        print('bk_out.shape= ', bk_out.shape)
-        bk_act = self.activation.backward(x1, bk_out, self.lr)
-        print('bk_act.shape= ', bk_out.shape)
-        self.linear.backward(x_train, bk_act, self.lr)
+        back0 = self.output.backward(x2, loss_grad, self.lr)
+        back1 = self.activation.backward(x1, back0, self.lr)
+        self.linear.backward(x_train, back1, self.lr)
 
         return loss
 
     def _mean_square_loss(self, y_pred, y_true):
         """Compute the loss function.
         """
-        loss = np.power(y_pred - y_true, 2).mean()*0.5
-        loss_grad = (y_pred - y_true)/y_pred.shape[0]
-        return loss , loss_grad
+        loss = np.power(y_pred - y_true, 2).mean() * 0.5
+        loss_grad = (y_pred - y_true) / y_pred.shape[0]
+        return loss, loss_grad
+
 
 # ----------
 # Build the components required by the NN.
 # ----------
 class Linear(Module):
-    def __init__(self,input_dim,output_dim):
+    def __init__(self, input_dim, output_dim):
         super(Linear, self).__init__()
-        # initilize weights
-        self.W = np.random.randn(input_dim,output_dim) * 1e-2
-        self.b = np.zeros((1,output_dim))
-        print('b.shape= ', self.b.shape)
-                       
-    def forward(self,inputs):
+        # initialize weights
+        self.W = np.random.randn(input_dim, output_dim) * 1e-2
+        self.b = np.zeros((1, output_dim))
+
+    def forward(self, inputs):
         """
-        Args:            
+        Args:
             inputs: a numpy.array, shape [# of samples, 1]
 
         Outputs:
@@ -130,26 +127,24 @@ class Linear(Module):
         """
         # return *
 
-        outputs = np.dot(inputs, self.W) + self.b
+        outputs = np.dot(self.W.T, inputs.T).transpose() + self.b
 
         return outputs
-    
+
     def backward(self, inputs, grad_out, lr):
         """Do backpropagation , update weights in this step.
         """
-        
-        # self.W -= lr * delt_W
-        # self.b -= lr * delt_b
-        # and return something for other layers.
-
         """
         Please Fill Your Code Here.
         """
-        self.W -= lr * np.dot(inputs.T, grad_out)
-        self.b -= lr * np.dot(inputs.T, grad_out)
-        outputs = np.dot(inputs.T, grad_out)
+        self.W = self.W - lr * inputs.T.dot(grad_out)
+        self.b = self.b - lr * np.dot(np.ones([1, grad_out.shape[0]]), grad_out)
+        # self.b = self.b- lr * np.dot(inputs.T, grad_out)
+
+        outputs = np.dot(grad_out, self.W.T)
 
         return outputs
+
 
 class ReLU(Module):
     # ReLu layer
@@ -157,9 +152,9 @@ class ReLU(Module):
         super(ReLU, self).__init__()
         pass
 
-    def forward(self,inputs):
+    def forward(self, inputs):
         """
-        Args:            
+        Args:
             inputs: a numpy.array, shape [# of samples, 1]
 
         Outputs:
@@ -174,7 +169,7 @@ class ReLU(Module):
 
         return outputs
 
-    def backward(self,inputs, grad_output, lr=None):
+    def backward(self, inputs, grad_output, lr=None):
         """No parameter required to be updated for ReLU,
         but it needs to transfer the gradients to other layers.
         """
@@ -182,20 +177,19 @@ class ReLU(Module):
         """
         Please Fill Your Code Here.
         """
-        # return *
-        #outputs = np.dot(inputs, grad_output)
+
         outputs = np.where(inputs > 0, grad_output, 0)
+        # return *
 
         return outputs
 
 
-
 if __name__ == '__main__':
     # generate the data
-    x = np.linspace(-np.pi,np.pi,140).reshape(140,-1)
+    x = np.linspace(-np.pi, np.pi, 140).reshape(140, -1)
     y = np.sin(x)
 
-    #set learning rate
+    # set learning rate
     lr = 0.02
 
     # build the model
@@ -204,23 +198,23 @@ if __name__ == '__main__':
     # count steps and save loss history
     loss = 1
     step = 0
-    l= []
+    l = []
 
     # training
     while loss >= 1e-4 and step < 15000:
         loss = model.backward(x, y)
         l.append(loss)
-        print("{}/15000  loss: {:.8f}".format(step+1,loss))
+        print("{}/15000  loss: {:.8f}".format(step + 1, loss))
         step += 1
-        
+
     # after training , plot the results
     y_pre = model(x)
-    plt.plot(x,y,c='r',label='true_value')
-    plt.plot(x,y_pre,c='b',label='predict_value')
+    plt.plot(x, y, c='r', label='true_value')
+    plt.plot(x, y_pre, c='b', label='predict_value')
     plt.legend()
     plt.title(datetime.datetime.now().ctime())
     plt.savefig("1.png")
     plt.figure()
-    plt.plot(np.arange(0,len(l)), l )
+    plt.plot(np.arange(0, len(l)), l)
     plt.title('loss history')
     plt.show()
